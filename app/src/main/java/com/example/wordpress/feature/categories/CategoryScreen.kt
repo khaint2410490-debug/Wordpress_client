@@ -1,0 +1,110 @@
+package com.example.wordpressclient.feature.categories
+
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.wordpressclient.core.common.UiState
+import com.example.wordpressclient.domain.model.Category
+
+/**
+ * CategoryScreen = màn hình danh sách danh mục (bản "có trạng thái").
+ *
+ * Lấy ViewModel từ Hilt, đọc state rồi giao cho CategoryContent vẽ.
+ *
+ * @param onCategoryClick Gọi khi người dùng bấm vào một danh mục, truyền cả danh mục đó.
+ *                        Chuyển tới đâu (ví dụ danh sách bài của danh mục) do AppNavHost quyết định.
+ */
+@Composable
+fun CategoryScreen(
+    onCategoryClick: (Category) -> Unit,
+    viewModel: CategoryViewModel = hiltViewModel()
+) {
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
+
+    CategoryContent(
+        state = state,
+        onCategoryClick = onCategoryClick,
+        onRetry = viewModel::loadCategories
+    )
+}
+
+/** Phần giao diện thuần: chỉ nhận state và vẽ ra, không phụ thuộc ViewModel hay Hilt. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun CategoryContent(
+    state: UiState<List<Category>>,
+    onCategoryClick: (Category) -> Unit,
+    onRetry: () -> Unit
+) {
+    Scaffold(
+        topBar = { TopAppBar(title = { Text("Danh mục") }) }
+    ) { innerPadding ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+        ) {
+            when (state) {
+                // Đang tải: vòng xoay giữa màn hình.
+                is UiState.Loading -> {
+                    CircularProgressIndicator(Modifier.align(Alignment.Center))
+                }
+
+                // Lỗi: thông báo kèm nút thử lại.
+                is UiState.Error -> {
+                    Column(
+                        modifier = Modifier
+                            .align(Alignment.Center)
+                            .padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Text(text = state.message, color = MaterialTheme.colorScheme.error)
+                        Button(onClick = onRetry) { Text("Thử lại") }
+                    }
+                }
+
+                // Có dữ liệu: hiện danh sách, hoặc thông báo nếu rỗng.
+                is UiState.Success -> {
+                    if (state.data.isEmpty()) {
+                        Text(
+                            text = "Chưa có danh mục nào.",
+                            modifier = Modifier.align(Alignment.Center)
+                        )
+                    } else {
+                        LazyColumn(Modifier.fillMaxSize()) {
+                            // key = id giúp Compose nhận ra đúng từng mục khi danh sách thay đổi.
+                            items(items = state.data, key = { it.id }) { category ->
+                                ListItem(
+                                    headlineContent = { Text(category.name) },
+                                    supportingContent = { Text("${category.count} bài viết") },
+                                    modifier = Modifier.clickable { onCategoryClick(category) }
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
