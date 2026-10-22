@@ -42,6 +42,13 @@ android {
 }
 
 dependencies {
+    constraints {
+        implementation("org.jetbrains.kotlin:kotlin-stdlib") {
+            version {
+                strictly(libs.versions.kotlin.get())
+            }
+        }
+    }
     implementation(libs.dagger.hilt.android)
     ksp(libs.dagger.hilt.compiler)
     implementation(platform(libs.androidx.compose.bom))

@@ -11,6 +11,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -26,7 +27,7 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.text.HtmlCompat
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.wordpressclient.core.common.UiState
 import com.example.wordpressclient.core.ui.ErrorRetryMessage
@@ -55,6 +56,7 @@ fun PostDetailScreen(
 
 /** Phần giao diện thuần: chỉ nhận state và vẽ ra, không phụ thuộc ViewModel hay Hilt. */
 @Composable
+@OptIn(ExperimentalMaterial3Api::class)
 private fun PostDetailContent(
     state: PostDetailUiState,
     onBackClick: () -> Unit,

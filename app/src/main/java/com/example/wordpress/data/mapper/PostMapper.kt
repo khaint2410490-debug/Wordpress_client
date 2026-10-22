@@ -1,5 +1,7 @@
 package com.example.wordpressclient.data.mapper
 
+import com.example.wordpressclient.data.remote.dto.PostDto
+import com.example.wordpressclient.domain.model.Post
 
 /**
  * PostMapper = nơi chuyển PostDto (dữ liệu thô từ WordPress) thành Post (model của app).
@@ -41,12 +43,3 @@ fun PostDto.toDomain(): Post = Post(
  * Dùng khi gọi API lấy nhiều bài viết cùng lúc.
  */
 fun List<PostDto>.toDomain(): List<Post> = map { it.toDomain() }
-
-/**
- * Hàm hỗ trợ (chỉ dùng trong file này): đổi chuỗi HTML thành văn bản thường.
- *
- * - HtmlCompat.fromHtml: bỏ thẻ HTML và giải mã các ký tự đặc biệt.
- * - replace("\uFFFC", ""): fromHtml có thể để lại ký tự thay thế cho thẻ <img>,
- *   ta xóa nó đi để không hiện ô vuông lạ trong tiêu đề hoặc tóm tắt.
- * - trim(): bỏ khoảng trắng và dòng trống thừa ở đầu cuối.
- */
