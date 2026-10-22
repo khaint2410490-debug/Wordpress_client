@@ -1,6 +1,8 @@
 package com.example.wordpressclient.core.network
 
-import com.example.wordpressclient.BuildConfig
+import com.example.wordpress.BuildConfig
+import com.example.wordpressclient.core.config.NetworkConfig
+import com.example.wordpressclient.data.remote.WordPressApi
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -30,15 +32,6 @@ import javax.inject.Singleton
 object NetworkModule {
 
     /**
-     * URL cơ sở của WordPress REST API.
-     *
-     * !!! Hãy thay bằng địa chỉ site của bạn, và phải kết thúc bằng dấu "/"
-     * (quy tắc của Retrofit). Giá trị này trùng với BASE_URL trong RetrofitClient,
-     * nên bạn chỉ cần giữ một nơi khi quay lại xử lý điểm 2.
-     */
-    private const val BASE_URL = "https://your-site.com/wp-json/wp/v2/"
-
-    /**
      * Bộ phân tích JSON.
      * - ignoreUnknownKeys: bỏ qua các trường WordPress trả về mà DTO không khai báo.
      * - coerceInputValues: nếu server trả null cho trường có giá trị mặc định,
@@ -47,8 +40,8 @@ object NetworkModule {
     @Provides
     @Singleton
     fun provideJson(): Json = Json {
-        ignoreUnknownKeys = true
-        coerceInputValues = true
+        ignoreUnknownKeys = NetworkConfig.IGNORE_UNKNOWN_JSON_KEYS
+        coerceInputValues = NetworkConfig.COERCE_JSON_INPUT_VALUES
     }
 
     /**
@@ -59,15 +52,15 @@ object NetworkModule {
     fun provideOkHttpClient(): OkHttpClient =
         OkHttpClient.Builder()
             // Thời gian chờ tối đa khi kết nối, đọc và ghi dữ liệu.
-            .connectTimeout(30, TimeUnit.SECONDS)
-            .readTimeout(30, TimeUnit.SECONDS)
-            .writeTimeout(30, TimeUnit.SECONDS)
+            .connectTimeout(NetworkConfig.TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            .readTimeout(NetworkConfig.TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            .writeTimeout(NetworkConfig.TIMEOUT_SECONDS, TimeUnit.SECONDS)
             .apply {
                 // Chỉ ghi log request/response ở bản debug.
                 if (BuildConfig.DEBUG) {
                     addInterceptor(
                         HttpLoggingInterceptor().apply {
-                            level = HttpLoggingInterceptor.Level.BASIC
+                            level = NetworkConfig.LOG_LEVEL
                         }
                     )
                 }
@@ -84,7 +77,7 @@ object NetworkModule {
         json: Json
     ): Retrofit =
         Retrofit.Builder()
-            .baseUrl(BASE_URL)
+            .baseUrl(NetworkConfig.BASE_URL)
             .client(okHttpClient)
             .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
             .build()
@@ -94,6 +87,6 @@ object NetworkModule {
      */
     @Provides
     @Singleton
-    fun provideWordPressApi(retrofit: Retrofit): `WordPressApi.kt` =
-        retrofit.create(`WordPressApi.kt`::class.java)
+    fun provideWordPressApi(retrofit: Retrofit): WordPressApi =
+        retrofit.create(WordPressApi::class.java)
 }

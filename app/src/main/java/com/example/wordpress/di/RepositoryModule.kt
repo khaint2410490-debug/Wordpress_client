@@ -1,6 +1,8 @@
 package com.example.wordpressclient.di
 
+import com.example.wordpressclient.data.repository.WordPressCategoryRepository
 import com.example.wordpressclient.data.repository.WordPressPostRepository
+import com.example.wordpressclient.domain.repository.CategoryRepository
 import com.example.wordpressclient.domain.repository.PostRepository
 import dagger.Binds
 import dagger.Module
@@ -20,6 +22,12 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class RepositoryModule {
+
+    @Binds
+    @Singleton
+    abstract fun bindCategoryRepository(
+        impl: WordPressCategoryRepository
+    ): CategoryRepository
 
     /**
      * Dòng này nói với Hilt: "Ai cần PostRepository thì đưa cho họ WordPressPostRepository."

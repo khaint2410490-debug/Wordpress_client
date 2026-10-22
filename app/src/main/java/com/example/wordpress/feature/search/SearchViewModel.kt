@@ -3,7 +3,6 @@ package com.example.wordpressclient.feature.search
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.wordpressclient.core.common.AppError
-import com.example.wordpressclient.domain.model.Post
 import com.example.wordpressclient.domain.repository.PostRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
@@ -14,32 +13,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-
-/**
- * SearchUiState = toàn bộ trạng thái của màn hình tìm kiếm.
- *
- * Dùng data class thay vì UiState chung vì màn hình cần nhớ thêm từ khóa đang gõ,
- * và phải phân biệt "chưa tìm gì" với "tìm rồi nhưng không có kết quả".
- */
-data class SearchUiState(
-
-    // Từ khóa trong ô tìm kiếm (giữ ở ViewModel để không mất khi xoay màn hình).
-    val query: String = "",
-
-    // Kết quả của lần tìm gần nhất.
-    val results: List<Post> = emptyList(),
-
-    // true khi đang chờ server trả kết quả.
-    val isLoading: Boolean = false,
-
-    // Thông báo lỗi của lần tìm gần nhất, null nếu không có lỗi.
-    val errorMessage: String? = null,
-
-    // true nếu đã có ít nhất một lần tìm xong. Giúp phân biệt:
-    //   hasSearched = false -> hiện gợi ý "Nhập từ khóa..."
-    //   hasSearched = true và results rỗng -> hiện "Không tìm thấy..."
-    val hasSearched: Boolean = false
-)
 
 /**
  * SearchViewModel = xử lý logic tìm kiếm bài viết.

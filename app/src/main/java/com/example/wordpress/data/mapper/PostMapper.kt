@@ -1,8 +1,5 @@
 package com.example.wordpressclient.data.mapper
 
-import androidx.core.text.HtmlCompat
-import com.example.wordpressclient.data.remote.dto.PostDto
-import com.example.wordpressclient.domain.model.Post
 
 /**
  * PostMapper = nơi chuyển PostDto (dữ liệu thô từ WordPress) thành Post (model của app).
@@ -53,8 +50,3 @@ fun List<PostDto>.toDomain(): List<Post> = map { it.toDomain() }
  *   ta xóa nó đi để không hiện ô vuông lạ trong tiêu đề hoặc tóm tắt.
  * - trim(): bỏ khoảng trắng và dòng trống thừa ở đầu cuối.
  */
-private fun String.htmlToPlainText(): String =
-    HtmlCompat.fromHtml(this, HtmlCompat.FROM_HTML_MODE_COMPACT)
-        .toString()
-        .replace("\uFFFC", "")
-        .trim()

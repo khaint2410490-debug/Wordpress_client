@@ -1,18 +1,13 @@
 package com.example.wordpressclient.feature.categories
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ListItem
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -24,6 +19,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.wordpressclient.core.common.UiState
+import com.example.wordpressclient.core.ui.ErrorRetryMessage
 import com.example.wordpressclient.domain.model.Category
 
 /**
@@ -49,7 +45,6 @@ fun CategoryScreen(
 }
 
 /** Phần giao diện thuần: chỉ nhận state và vẽ ra, không phụ thuộc ViewModel hay Hilt. */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CategoryContent(
     state: UiState<List<Category>>,
@@ -72,16 +67,11 @@ private fun CategoryContent(
 
                 // Lỗi: thông báo kèm nút thử lại.
                 is UiState.Error -> {
-                    Column(
-                        modifier = Modifier
-                            .align(Alignment.Center)
-                            .padding(16.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Text(text = state.message, color = MaterialTheme.colorScheme.error)
-                        Button(onClick = onRetry) { Text("Thử lại") }
-                    }
+                    ErrorRetryMessage(
+                        message = state.message,
+                        onRetry = onRetry,
+                        modifier = Modifier.align(Alignment.Center)
+                    )
                 }
 
                 // Có dữ liệu: hiện danh sách, hoặc thông báo nếu rỗng.

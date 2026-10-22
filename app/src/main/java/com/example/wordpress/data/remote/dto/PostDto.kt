@@ -7,7 +7,7 @@ import kotlinx.serialization.Serializable
  * PostDto = "Data Transfer Object" của một bài viết.
  *
  * Class này mô tả đúng cấu trúc JSON mà WordPress REST API trả về
- * (endpoint /wp-json/wp/v2/posts). Nó chỉ dùng ở tầng data.
+ * (endpoint posts của WordPress REST API). Nó chỉ dùng ở tầng data.
  * Sau đó PostMapper sẽ chuyển nó thành model Post sạch hơn cho phần UI.
  *
  * Quy ước: tên thuộc tính theo kiểu camelCase của Kotlin,

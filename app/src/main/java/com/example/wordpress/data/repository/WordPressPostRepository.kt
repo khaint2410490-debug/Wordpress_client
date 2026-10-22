@@ -1,9 +1,9 @@
 package com.example.wordpressclient.data.repository
 
 import com.example.wordpressclient.data.mapper.toDomain
+import com.example.wordpressclient.data.remote.WordPressApi
 import com.example.wordpressclient.domain.model.Post
 import com.example.wordpressclient.domain.repository.PostRepository
-import kotlinx.coroutines.CancellationException
 import retrofit2.HttpException
 import javax.inject.Inject
 
@@ -18,7 +18,7 @@ import javax.inject.Inject
  * - Retrofit với hàm suspend tự chạy ở luồng nền, nên ở đây không cần đổi luồng thủ công.
  */
 class WordPressPostRepository @Inject constructor(
-    private val api: `WordPressApi.kt`
+    private val api: WordPressApi
 ) : PostRepository {
 
     /**
@@ -29,7 +29,7 @@ class WordPressPostRepository @Inject constructor(
         perPage: Int,
         search: String?,
         categoryId: Int?
-    ): Result<List<Post>> = safeCall {
+    ): Result<List<Post>> = safeApiCall {
         val response = api.getPosts(
             page = page,
             perPage = perPage,
@@ -47,32 +47,16 @@ class WordPressPostRepository @Inject constructor(
             // để cuộn tải thêm không hiện thông báo lỗi sai.
             response.code() == 400 && page > 1 -> emptyList()
 
-            // Các trường hợp còn lại: ném lỗi HTTP để safeCall gói vào Result.failure.
+            // Các trường hợp còn lại: ném lỗi HTTP để safeApiCall chuyển thành AppError.
             else -> throw HttpException(response)
         }
     }
 
     /**
      * Lấy một bài viết theo ID rồi chuyển sang Post.
-     * Nếu ID không tồn tại, Retrofit ném HttpException (404) và safeCall sẽ gói lại.
+     * Nếu ID không tồn tại, Retrofit ném HttpException (404) và safeApiCall chuyển thành NotFound.
      */
-    override suspend fun getPostById(id: Int): Result<Post> = safeCall {
+    override suspend fun getPostById(id: Int): Result<Post> = safeApiCall {
         api.getPostById(id).toDomain()
     }
-
-    /**
-     * Hàm hỗ trợ: chạy một đoạn code và gói kết quả vào Result.
-     *
-     * Ta không dùng runCatching trực tiếp vì nó cũng bắt cả CancellationException.
-     * Khi coroutine bị hủy (ví dụ người dùng thoát màn hình), lỗi này phải được ném lại
-     * để coroutine dừng đúng cách, nếu không có thể gây hành vi khó hiểu.
-     */
-    private inline fun <T> safeCall(block: () -> T): Result<T> =
-        try {
-            Result.success(block())
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
 }

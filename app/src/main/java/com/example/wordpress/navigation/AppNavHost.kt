@@ -40,6 +40,9 @@ fun AppNavHost(
         // ----- Danh sách bài viết -----
         composable(route = Routes.POST_LIST) {
             PostListScreen(
+                onSearchClick = {
+                    navController.navigate(Routes.SEARCH)
+                },
                 // Bấm vào một bài thì mở màn hình chi tiết với ID tương ứng.
                 onPostClick = { postId ->
                     navController.navigate(Routes.postDetail(postId))
