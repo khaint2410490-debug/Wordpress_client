@@ -35,7 +35,8 @@ class WordPressPostRepository @Inject constructor(
             perPage = perPage,
             search = search,
             // Domain gọi là categoryId, còn API gọi là categories, ở đây ánh xạ lại.
-            categories = categoryId
+            categories = categoryId,
+            embed = "author,wp:featuredmedia"
         )
 
         when {
@@ -57,6 +58,6 @@ class WordPressPostRepository @Inject constructor(
      * Nếu ID không tồn tại, Retrofit ném HttpException (404) và safeApiCall chuyển thành NotFound.
      */
     override suspend fun getPostById(id: Int): Result<Post> = safeApiCall {
-        api.getPostById(id).toDomain()
+        api.getPostById(id, embed = "author,wp:featuredmedia").toDomain()
     }
 }
