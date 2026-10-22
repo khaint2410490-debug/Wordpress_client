@@ -6,8 +6,12 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -26,11 +30,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil.compose.AsyncImage
 import com.example.wordpressclient.core.ui.ErrorRetryMessage
 import com.example.wordpressclient.domain.model.Post
 
@@ -154,13 +161,42 @@ private fun SearchContent(
 @Composable
 private fun SearchResultItem(post: Post, onClick: () -> Unit) {
     ListItem(
+        leadingContent = {
+            post.featuredImageUrl?.let { imageUrl ->
+                AsyncImage(
+                    model = imageUrl,
+                    contentDescription = "Ảnh đại diện bài viết ${post.title}",
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .size(64.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                )
+            }
+        },
         headlineContent = {
             Text(text = post.title, maxLines = 2, overflow = TextOverflow.Ellipsis)
         },
         supportingContent = {
-            // Chỉ hiện tóm tắt nếu bài có.
-            if (post.excerpt.isNotBlank()) {
-                Text(text = post.excerpt, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            Column {
+                post.authorName?.let { authorName ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        post.authorAvatarUrl?.let { avatarUrl ->
+                            AsyncImage(
+                                model = avatarUrl,
+                                contentDescription = "Ảnh đại diện $authorName",
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier
+                                    .padding(end = 6.dp)
+                                    .size(20.dp)
+                                    .clip(CircleShape)
+                            )
+                        }
+                        Text(text = authorName, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    }
+                }
+                if (post.excerpt.isNotBlank()) {
+                    Text(text = post.excerpt, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                }
             }
         },
         modifier = Modifier.clickable(onClick = onClick)

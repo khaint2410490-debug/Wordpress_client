@@ -54,7 +54,32 @@ data class PostDto(
     val author: Int = 0,
 
     // Danh sách ID các danh mục mà bài viết thuộc về.
-    val categories: List<Int> = emptyList()
+    val categories: List<Int> = emptyList(),
+
+    @SerialName("_embedded")
+    val embedded: PostEmbeddedDto? = null
+)
+
+@Serializable
+data class PostEmbeddedDto(
+    val author: List<AuthorDto> = emptyList(),
+
+    @SerialName("wp:featuredmedia")
+    val featuredMedia: List<FeaturedMediaDto> = emptyList()
+)
+
+@Serializable
+data class AuthorDto(
+    val name: String = "",
+
+    @SerialName("avatar_urls")
+    val avatarUrls: Map<String, String> = emptyMap()
+)
+
+@Serializable
+data class FeaturedMediaDto(
+    @SerialName("source_url")
+    val sourceUrl: String = ""
 )
 
 /**

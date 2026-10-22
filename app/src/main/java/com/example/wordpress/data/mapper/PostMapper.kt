@@ -33,9 +33,10 @@ fun PostDto.toDomain(): Post = Post(
     // Link bài viết trên web (có giá trị mặc định "" trong DTO nên không bao giờ null).
     link = link,
 
-    // PostDto hiện chưa có dữ liệu ảnh (featuredMedia chỉ là số ID),
-    // nên tạm để null. Khi dùng tham số _embed ta sẽ bổ sung phần này.
-    featuredImageUrl = null
+    featuredImageUrl = embedded?.featuredMedia?.firstOrNull()?.sourceUrl?.takeIf(String::isNotBlank),
+    authorName = embedded?.author?.firstOrNull()?.name?.takeIf(String::isNotBlank),
+    authorAvatarUrl = embedded?.author?.firstOrNull()?.avatarUrls?.get("96")
+        ?: embedded?.author?.firstOrNull()?.avatarUrls?.values?.firstOrNull()
 )
 
 /**

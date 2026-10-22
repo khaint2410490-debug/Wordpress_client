@@ -7,9 +7,13 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -28,10 +32,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.layout.ContentScale
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil.compose.AsyncImage
 import com.example.wordpressclient.core.ui.ErrorRetryMessage
 import com.example.wordpressclient.domain.model.Post
 
@@ -187,31 +194,71 @@ private fun PostItem(post: Post, onClick: () -> Unit) {
             .fillMaxWidth()
             .clickable(onClick = onClick)
     ) {
-        Column(Modifier.padding(16.dp)) {
-            // Tiêu đề: tối đa 2 dòng, dài hơn thì hiện "...".
-            Text(
-                text = post.title,
-                style = MaterialTheme.typography.titleMedium,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
-            )
-
-            // Ngày đăng: tạm cắt 10 ký tự đầu của chuỗi ISO, ví dụ "2024-05-01".
-            Text(
-                text = post.date.take(10),
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.secondary,
-                modifier = Modifier.padding(top = 4.dp)
-            )
-
-            // Đoạn tóm tắt: tối đa 3 dòng. Bỏ qua nếu bài không có tóm tắt.
-            if (post.excerpt.isNotBlank()) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.Top
+        ) {
+            Column(Modifier.weight(1f)) {
                 Text(
-                    text = post.excerpt,
-                    style = MaterialTheme.typography.bodyLarge,
-                    maxLines = 3,
+                    text = post.title,
+                    style = MaterialTheme.typography.titleMedium,
+                    maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.padding(top = 8.dp)
+                )
+
+                if (post.authorName != null) {
+                    Row(
+                        modifier = Modifier.padding(top = 8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        post.authorAvatarUrl?.let { avatarUrl ->
+                            AsyncImage(
+                                model = avatarUrl,
+                                contentDescription = "Ảnh đại diện ${post.authorName}",
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier
+                                    .size(28.dp)
+                                    .clip(CircleShape)
+                            )
+                        }
+                        Text(
+                            text = post.authorName,
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.secondary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+
+                Text(
+                    text = post.date.take(10),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.secondary,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+
+                if (post.excerpt.isNotBlank()) {
+                    Text(
+                        text = post.excerpt,
+                        style = MaterialTheme.typography.bodyLarge,
+                        maxLines = 3,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+                }
+            }
+
+            post.featuredImageUrl?.let { imageUrl ->
+                AsyncImage(
+                    model = imageUrl,
+                    contentDescription = "Ảnh đại diện bài viết ${post.title}",
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .size(width = 96.dp, height = 112.dp)
+                        .clip(RoundedCornerShape(8.dp))
                 )
             }
         }

@@ -36,5 +36,9 @@ data class Post(
 
     // URL ảnh đại diện. Là null nếu bài không có ảnh,
     // hoặc nếu chưa lấy dữ liệu ảnh (cần tham số _embed, làm sau).
-    val featuredImageUrl: String? = null
+    val featuredImageUrl: String? = null,
+
+    val authorName: String? = null,
+
+    val authorAvatarUrl: String? = null
 )
