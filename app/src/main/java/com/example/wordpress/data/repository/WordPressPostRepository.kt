@@ -1,5 +1,10 @@
 package com.example.wordpressclient.data.repository
 
+import com.example.wordpressclient.core.common.AppError
+import com.example.wordpressclient.data.local.CachedPostDao
+import com.example.wordpressclient.data.local.CachedPostEntity
+import com.example.wordpressclient.data.local.toCachedPostEntity
+import com.example.wordpressclient.data.local.toDomain
 import com.example.wordpressclient.data.mapper.toDomain
 import com.example.wordpressclient.data.remote.WordPressApi
 import com.example.wordpressclient.domain.model.Post
@@ -18,7 +23,8 @@ import javax.inject.Inject
  * - Retrofit với hàm suspend tự chạy ở luồng nền, nên ở đây không cần đổi luồng thủ công.
  */
 class WordPressPostRepository @Inject constructor(
-    private val api: WordPressApi
+    private val api: WordPressApi,
+    private val cachedPostDao: CachedPostDao
 ) : PostRepository {
 
     /**
@@ -29,27 +35,48 @@ class WordPressPostRepository @Inject constructor(
         perPage: Int,
         search: String?,
         categoryId: Int?
-    ): Result<List<Post>> = safeApiCall {
-        val response = api.getPosts(
-            page = page,
-            perPage = perPage,
-            search = search,
-            // Domain gọi là categoryId, còn API gọi là categories, ở đây ánh xạ lại.
-            categories = categoryId,
-            embed = "author,wp:featuredmedia"
-        )
+    ): Result<List<Post>> {
+        val result = safeApiCall {
+            val response = api.getPosts(
+                page = page,
+                perPage = perPage,
+                search = search,
+                categories = categoryId,
+                embed = "author,wp:featuredmedia"
+            )
 
-        when {
-            // Thành công: lấy body (nếu null thì coi như danh sách rỗng) rồi chuyển sang Post.
-            response.isSuccessful -> response.body().orEmpty().toDomain()
+            val posts = when {
+                response.isSuccessful -> response.body().orEmpty().toDomain()
+                response.code() == 400 && page > 1 -> emptyList()
+                else -> throw HttpException(response)
+            }
 
-            // Theo hiểu biết của tôi, WordPress trả lỗi 400 khi xin trang vượt quá số trang
-            // hiện có. Với các trang sau trang 1, ta coi đó là "hết bài" thay vì lỗi,
-            // để cuộn tải thêm không hiện thông báo lỗi sai.
-            response.code() == 400 && page > 1 -> emptyList()
+            if (search == null && categoryId == null && (page == 1 || posts.isNotEmpty())) {
+                cachedPostDao.cachePostListPage(
+                    posts = posts.map(Post::toCachedPostEntity),
+                    page = page,
+                    perPage = perPage
+                )
+            }
 
-            // Các trường hợp còn lại: ném lỗi HTTP để safeApiCall chuyển thành AppError.
-            else -> throw HttpException(response)
+            posts
+        }
+
+        return result.recoverCatching { error ->
+            if (
+                error is AppError.Network &&
+                search == null &&
+                categoryId == null
+            ) {
+                val cachedPosts = cachedPostDao.getCachedPostList()
+                if (cachedPosts.isNotEmpty()) {
+                    return@recoverCatching cachedPosts
+                        .drop((page - 1) * perPage)
+                        .take(perPage)
+                        .map(CachedPostEntity::toDomain)
+                }
+            }
+            throw error
         }
     }
 
@@ -57,7 +84,21 @@ class WordPressPostRepository @Inject constructor(
      * Lấy một bài viết theo ID rồi chuyển sang Post.
      * Nếu ID không tồn tại, Retrofit ném HttpException (404) và safeApiCall chuyển thành NotFound.
      */
-    override suspend fun getPostById(id: Int): Result<Post> = safeApiCall {
-        api.getPostById(id, embed = "author,wp:featuredmedia").toDomain()
+    override suspend fun getPostById(id: Int): Result<Post> {
+        val result = safeApiCall {
+            api.getPostById(id, embed = "author,wp:featuredmedia")
+                .toDomain()
+                .also { post ->
+                    cachedPostDao.upsertPost(post.toCachedPostEntity())
+                }
+        }
+
+        return result.recoverCatching { error ->
+            if (error is AppError.Network) {
+                cachedPostDao.getCachedPost(id)?.toDomain() ?: throw error
+            } else {
+                throw error
+            }
+        }
     }
 }
