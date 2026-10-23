@@ -6,7 +6,9 @@ import android.widget.Toast
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -25,12 +27,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.text.HtmlCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil.compose.AsyncImage
 import com.example.wordpressclient.core.common.UiState
 import com.example.wordpressclient.core.ui.BookmarkButton
 import com.example.wordpressclient.core.ui.ErrorRetryMessage
@@ -159,6 +163,18 @@ private fun PostBody(post: Post) {
             modifier = Modifier.padding(top = 4.dp, bottom = 16.dp)
         )
 
+        post.featuredImageUrl?.let { imageUrl ->
+            AsyncImage(
+                model = imageUrl,
+                contentDescription = "Ảnh đại diện bài viết ${post.title}",
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 16.dp)
+                    .aspectRatio(16f / 9f)
+            )
+        }
+
         HtmlText(html = post.contentHtml)
     }
 }
@@ -176,7 +192,7 @@ private fun HtmlText(html: String, modifier: Modifier = Modifier) {
     val linkColor = MaterialTheme.colorScheme.primary.toArgb()
 
     AndroidView(
-        modifier = modifier,
+        modifier = modifier.fillMaxWidth(),
         // factory chạy một lần: tạo TextView và cấu hình cố định.
         factory = { context ->
             TextView(context).apply {
@@ -189,12 +205,15 @@ private fun HtmlText(html: String, modifier: Modifier = Modifier) {
         },
         // update chạy khi nội dung hoặc màu đổi.
         update = { textView ->
-            textView.text = HtmlCompat.fromHtml(
-                html,
-                HtmlCompat.FROM_HTML_MODE_LEGACY,
-                CoilImageGetter(textView),
-                null
-            )
+            if (textView.tag != html) {
+                textView.tag = html
+                textView.text = HtmlCompat.fromHtml(
+                    html,
+                    HtmlCompat.FROM_HTML_MODE_LEGACY,
+                    CoilImageGetter(textView),
+                    null
+                )
+            }
             textView.setTextColor(textColor)
             textView.setLinkTextColor(linkColor)
         }

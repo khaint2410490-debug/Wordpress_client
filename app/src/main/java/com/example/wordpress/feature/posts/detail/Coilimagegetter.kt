@@ -5,6 +5,7 @@ import android.graphics.ColorFilter
 import android.graphics.PixelFormat
 import android.graphics.drawable.Drawable
 import android.text.Html
+import android.text.SpannableStringBuilder
 import android.widget.TextView
 import coil.imageLoader
 import coil.request.ImageRequest
@@ -43,6 +44,7 @@ class CoilImageGetter(
 
         // Khung rỗng trả về ngay lập tức, ảnh sẽ được nhét vào sau khi tải xong.
         val wrapper = ImageDrawableWrapper()
+        wrapper.setBounds(0, 0, 1, 1)
         val context = textView.context
 
         val request = ImageRequest.Builder(context)
@@ -80,14 +82,15 @@ class CoilImageGetter(
         val height = (intrinsicHeight * scale).toInt().coerceAtLeast(1)
 
         // Nhét ảnh vào khung và đặt cùng kích thước cho cả hai.
-        loaded.setBounds(0, 0, width, height)
         wrapper.inner = loaded
         wrapper.setBounds(0, 0, width, height)
 
-        // Gán lại text để TextView tính lại chiều cao, vì ảnh làm chiều cao đổi.
-        // (Cách này thường dùng với ImageGetter; nếu ảnh hiện nhưng văn bản bị đè lên,
-        // hãy báo lại để tôi xem.)
-        textView.text = textView.text
+        // A fresh spannable forces TextView to recalculate line positions and image height.
+        textView.post {
+            textView.text = SpannableStringBuilder(textView.text)
+            textView.requestLayout()
+            textView.invalidate()
+        }
     }
 
     /**
@@ -107,13 +110,24 @@ class CoilImageGetter(
  * Khung chứa ảnh. Ban đầu rỗng (không vẽ gì), có ảnh thì vẽ ảnh đó.
  * Mọi thao tác vẽ đều chuyển cho `inner`.
  */
-private class ImageDrawableWrapper : Drawable() {
+private class ImageDrawableWrapper : Drawable(), Drawable.Callback {
 
     // Ảnh thật, null khi chưa tải xong.
     var inner: Drawable? = null
+        set(value) {
+            field?.callback = null
+            field = value
+            value?.callback = this
+            value?.bounds = bounds
+            invalidateSelf()
+        }
 
     override fun draw(canvas: Canvas) {
         inner?.draw(canvas)
+    }
+
+    override fun onBoundsChange(bounds: android.graphics.Rect) {
+        inner?.bounds = bounds
     }
 
     override fun setAlpha(alpha: Int) {
@@ -126,4 +140,20 @@ private class ImageDrawableWrapper : Drawable() {
 
     @Deprecated("Deprecated in Java")
     override fun getOpacity(): Int = PixelFormat.TRANSLUCENT
+
+    override fun getIntrinsicWidth(): Int = inner?.intrinsicWidth ?: bounds.width()
+
+    override fun getIntrinsicHeight(): Int = inner?.intrinsicHeight ?: bounds.height()
+
+    override fun invalidateDrawable(who: Drawable) {
+        invalidateSelf()
+    }
+
+    override fun scheduleDrawable(who: Drawable, what: Runnable, `when`: Long) {
+        callback?.scheduleDrawable(this, what, `when`)
+    }
+
+    override fun unscheduleDrawable(who: Drawable, what: Runnable) {
+        callback?.unscheduleDrawable(this, what)
+    }
 }
