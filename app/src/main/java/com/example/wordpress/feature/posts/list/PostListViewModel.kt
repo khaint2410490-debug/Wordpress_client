@@ -4,7 +4,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.SavedStateHandle
 import com.example.wordpressclient.core.common.AppError
+import com.example.wordpressclient.domain.model.Post
 import com.example.wordpressclient.domain.repository.PostRepository
+import com.example.wordpressclient.domain.repository.SavedPostRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -23,6 +25,7 @@ import javax.inject.Inject
 @HiltViewModel
 class PostListViewModel @Inject constructor(
     private val repository: PostRepository,
+    private val savedPostRepository: SavedPostRepository,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -39,8 +42,23 @@ class PostListViewModel @Inject constructor(
     private var nextPage = 1
 
     init {
+        viewModelScope.launch {
+            savedPostRepository.observeSavedPostIds().collect { savedIds ->
+                _uiState.update { it.copy(savedPostIds = savedIds) }
+            }
+        }
         // Vừa mở màn hình là tải trang đầu tiên.
         loadNextPage()
+    }
+
+    fun toggleSaved(post: Post) {
+        viewModelScope.launch {
+            if (post.id in _uiState.value.savedPostIds) {
+                savedPostRepository.removeSavedPost(post.id)
+            } else {
+                savedPostRepository.savePost(post)
+            }
+        }
     }
 
     /**

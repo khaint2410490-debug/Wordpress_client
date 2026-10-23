@@ -32,6 +32,7 @@ import androidx.core.text.HtmlCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.wordpressclient.core.common.UiState
+import com.example.wordpressclient.core.ui.BookmarkButton
 import com.example.wordpressclient.core.ui.ErrorRetryMessage
 import com.example.wordpressclient.core.ui.sharePost
 import com.example.wordpressclient.domain.model.Post
@@ -49,11 +50,14 @@ fun PostDetailScreen(
     viewModel: PostDetailViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val savedPostIds by viewModel.savedPostIds.collectAsStateWithLifecycle()
 
     PostDetailContent(
         state = state,
+        isSaved = (state as? UiState.Success)?.data?.id?.let { it in savedPostIds } == true,
         onBackClick = onBackClick,
-        onRetry = viewModel::loadPost
+        onRetry = viewModel::loadPost,
+        onBookmarkClick = viewModel::toggleSaved
     )
 }
 
@@ -62,8 +66,10 @@ fun PostDetailScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 private fun PostDetailContent(
     state: PostDetailUiState,
+    isSaved: Boolean,
     onBackClick: () -> Unit,
-    onRetry: () -> Unit
+    onRetry: () -> Unit,
+    onBookmarkClick: () -> Unit
 ) {
     val context = LocalContext.current
     val postToShare = (state as? UiState.Success)?.data
@@ -74,6 +80,7 @@ private fun PostDetailContent(
                 title = {},
                 actions = {
                     postToShare?.let { post ->
+                        BookmarkButton(isSaved = isSaved, onClick = onBookmarkClick)
                         IconButton(
                             onClick = {
                                 if (!context.sharePost(post.title, post.link)) {

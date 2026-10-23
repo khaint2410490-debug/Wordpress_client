@@ -12,5 +12,7 @@ data class SearchUiState(
     val results: List<Post> = emptyList(),
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
-    val hasSearched: Boolean = false
+    val hasSearched: Boolean = false,
+    val showSavedOnly: Boolean = false,
+    val savedPosts: List<Post> = emptyList()
 )

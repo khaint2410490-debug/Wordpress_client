@@ -15,14 +15,17 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.ListItem
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -32,6 +35,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
@@ -39,6 +43,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
+import com.example.wordpressclient.core.ui.BookmarkButton
 import com.example.wordpressclient.core.ui.ErrorRetryMessage
 import com.example.wordpressclient.domain.model.Post
 
@@ -62,7 +67,9 @@ fun SearchScreen(
         onQueryChange = viewModel::onQueryChange,
         onSearch = viewModel::searchNow,
         onPostClick = onPostClick,
-        onBackClick = onBackClick
+        onBackClick = onBackClick,
+        onToggleSavedOnly = viewModel::toggleSavedOnly,
+        onBookmarkClick = viewModel::toggleSaved
     )
 }
 
@@ -75,6 +82,8 @@ private fun SearchContent(
     onSearch: () -> Unit,
     onPostClick: (Int) -> Unit,
     onBackClick: () -> Unit,
+    onToggleSavedOnly: () -> Unit,
+    onBookmarkClick: (Post) -> Unit,
 ) {
     Scaffold(
         topBar = {
@@ -85,6 +94,27 @@ private fun SearchContent(
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Quay lại"
+                        )
+                    }
+                },
+                actions = {
+                    IconButton(onClick = onToggleSavedOnly) {
+                        Icon(
+                            imageVector = if (state.showSavedOnly) {
+                                Icons.Filled.Bookmark
+                            } else {
+                                Icons.Outlined.BookmarkBorder
+                            },
+                            contentDescription = if (state.showSavedOnly) {
+                                "Hiển thị tất cả bài viết"
+                            } else {
+                                "Chỉ hiển thị bài viết đã lưu"
+                            },
+                            tint = if (state.showSavedOnly) {
+                                Color.Black
+                            } else {
+                                MaterialTheme.colorScheme.onSurface
+                            }
                         )
                     }
                 }
@@ -124,6 +154,17 @@ private fun SearchContent(
                 LinearProgressIndicator(Modifier.fillMaxWidth())
             }
 
+            val visiblePosts = if (state.showSavedOnly) {
+                val query = state.query.trim()
+                state.savedPosts.filter { post ->
+                    query.isEmpty() ||
+                        post.title.contains(query, ignoreCase = true) ||
+                        post.excerpt.contains(query, ignoreCase = true)
+                }
+            } else {
+                state.results
+            }
+
             Box(Modifier.fillMaxSize()) {
                 when {
                     // Lỗi: thông báo kèm nút thử lại.
@@ -136,17 +177,36 @@ private fun SearchContent(
                     }
 
                     // Có kết quả: hiện danh sách.
-                    state.results.isNotEmpty() -> {
+                    visiblePosts.isNotEmpty() -> {
                         LazyColumn(Modifier.fillMaxSize()) {
                             // key = id giúp Compose nhận ra đúng từng mục khi danh sách thay đổi.
-                            items(items = state.results, key = { it.id }) { post ->
-                                SearchResultItem(post = post, onClick = { onPostClick(post.id) })
+                            items(items = visiblePosts, key = { it.id }) { post ->
+                                SearchResultItem(
+                                    post = post,
+                                    isSaved = state.savedPosts.any { it.id == post.id },
+                                    onClick = { onPostClick(post.id) },
+                                    onBookmarkClick = { onBookmarkClick(post) }
+                                )
                             }
                         }
                     }
 
                     // Đang tìm mà chưa có kết quả nào: để trống, thanh tiến trình ở trên đã báo.
                     state.isLoading -> Unit
+
+                    state.showSavedOnly -> {
+                        val message = if (state.savedPosts.isEmpty()) {
+                            "Chưa có bài viết nào được lưu."
+                        } else {
+                            "Không có bài viết đã lưu khớp với từ khóa."
+                        }
+                        Text(
+                            text = message,
+                            modifier = Modifier
+                                .align(Alignment.Center)
+                                .padding(16.dp)
+                        )
+                    }
 
                     // Đã tìm xong nhưng không có bài nào khớp.
                     state.hasSearched -> {
@@ -175,7 +235,12 @@ private fun SearchContent(
 
 /** Một dòng kết quả: tiêu đề và đoạn tóm tắt ngắn. */
 @Composable
-private fun SearchResultItem(post: Post, onClick: () -> Unit) {
+private fun SearchResultItem(
+    post: Post,
+    isSaved: Boolean,
+    onClick: () -> Unit,
+    onBookmarkClick: () -> Unit
+) {
     ListItem(
         leadingContent = {
             post.featuredImageUrl?.let { imageUrl ->
@@ -214,6 +279,9 @@ private fun SearchResultItem(post: Post, onClick: () -> Unit) {
                     Text(text = post.excerpt, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 }
             }
+        },
+        trailingContent = {
+            BookmarkButton(isSaved = isSaved, onClick = onBookmarkClick)
         },
         modifier = Modifier.clickable(onClick = onClick)
     )

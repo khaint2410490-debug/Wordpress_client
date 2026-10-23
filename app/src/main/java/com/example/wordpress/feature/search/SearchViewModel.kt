@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.wordpressclient.core.common.AppError
 import com.example.wordpressclient.domain.repository.PostRepository
+import com.example.wordpressclient.domain.repository.SavedPostRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -23,7 +24,8 @@ import javax.inject.Inject
  */
 @HiltViewModel
 class SearchViewModel @Inject constructor(
-    private val repository: PostRepository
+    private val repository: PostRepository,
+    private val savedPostRepository: SavedPostRepository
 ) : ViewModel() {
 
     // Trạng thái có thể thay đổi, chỉ ViewModel được sửa.
@@ -35,6 +37,39 @@ class SearchViewModel @Inject constructor(
     // Giữ tham chiếu lần tìm đang chờ/đang chạy để hủy khi người dùng gõ tiếp.
     private var searchJob: Job? = null
 
+    init {
+        viewModelScope.launch {
+            savedPostRepository.observeSavedPosts().collect { posts ->
+                _uiState.update { it.copy(savedPosts = posts) }
+            }
+        }
+    }
+
+    fun toggleSavedOnly() {
+        searchJob?.cancel()
+        val showSavedOnly = !_uiState.value.showSavedOnly
+        _uiState.update { state ->
+            state.copy(
+                showSavedOnly = showSavedOnly,
+                isLoading = false,
+                errorMessage = null
+            )
+        }
+        if (!showSavedOnly && _uiState.value.query.isNotBlank()) {
+            searchNow()
+        }
+    }
+
+    fun toggleSaved(post: com.example.wordpressclient.domain.model.Post) {
+        viewModelScope.launch {
+            if (_uiState.value.savedPosts.any { it.id == post.id }) {
+                savedPostRepository.removeSavedPost(post.id)
+            } else {
+                savedPostRepository.savePost(post)
+            }
+        }
+    }
+
     /**
      * Gọi mỗi khi người dùng đổi nội dung ô tìm kiếm.
      */
@@ -43,6 +78,8 @@ class SearchViewModel @Inject constructor(
 
         // Người dùng gõ tiếp thì hủy lần tìm cũ (đang đợi hoặc đang gọi mạng).
         searchJob?.cancel()
+
+        if (_uiState.value.showSavedOnly) return
 
         // Ô tìm kiếm trống: xóa kết quả và quay về trạng thái ban đầu.
         if (newQuery.isBlank()) {
@@ -68,6 +105,7 @@ class SearchViewModel @Inject constructor(
      * Tìm ngay, không đợi. Dùng khi người dùng bấm nút tìm trên bàn phím hoặc bấm "Thử lại".
      */
     fun searchNow() {
+        if (_uiState.value.showSavedOnly) return
         val query = _uiState.value.query.trim()
         if (query.isEmpty()) return
 

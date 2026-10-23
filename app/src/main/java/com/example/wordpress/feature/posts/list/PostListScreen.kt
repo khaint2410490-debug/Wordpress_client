@@ -43,6 +43,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
+import com.example.wordpressclient.core.ui.BookmarkButton
 import com.example.wordpressclient.core.ui.ErrorRetryMessage
 import com.example.wordpressclient.core.ui.toVietnameseDate
 import com.example.wordpressclient.domain.model.Post
@@ -76,7 +77,8 @@ fun PostListScreen(
         onSearchClick = onSearchClick,
         onLoadMore = viewModel::loadNextPage,
         onRetry = viewModel::retry,
-        onRefresh = viewModel::refresh
+        onRefresh = viewModel::refresh,
+        onBookmarkClick = viewModel::toggleSaved
     )
 }
 
@@ -95,7 +97,8 @@ private fun PostListContent(
     onCategoriesClick: (() -> Unit)? = null,
     onBackClick: (() -> Unit)? = null,
     onRetry: () -> Unit,
-    onRefresh: () -> Unit
+    onRefresh: () -> Unit,
+    onBookmarkClick: (Post) -> Unit
 ) {
     Scaffold(
         topBar = {
@@ -158,7 +161,8 @@ private fun PostListContent(
                     state = state,
                     onPostClick = onPostClick,
                     onLoadMore = onLoadMore,
-                    onRetry = onRetry
+                    onRetry = onRetry,
+                    onBookmarkClick = onBookmarkClick
                 )
             }
         }
@@ -171,7 +175,8 @@ private fun PostList(
     state: PostListUiState,
     onPostClick: (Int) -> Unit,
     onLoadMore: () -> Unit,
-    onRetry: () -> Unit
+    onRetry: () -> Unit,
+    onBookmarkClick: (Post) -> Unit
 ) {
     val listState = rememberLazyListState()
 
@@ -198,7 +203,12 @@ private fun PostList(
     ) {
         // key = id giúp Compose nhận ra đúng từng mục khi danh sách thay đổi.
         items(items = state.posts, key = { it.id }) { post ->
-            PostItem(post = post, onClick = { onPostClick(post.id) })
+            PostItem(
+                post = post,
+                isSaved = post.id in state.savedPostIds,
+                onClick = { onPostClick(post.id) },
+                onBookmarkClick = { onBookmarkClick(post) }
+            )
         }
 
         // Chân danh sách: vòng xoay khi đang tải thêm, hoặc lỗi kèm nút thử lại.
@@ -223,7 +233,12 @@ private fun PostList(
 
 /** Một thẻ bài viết trong danh sách. */
 @Composable
-private fun PostItem(post: Post, onClick: () -> Unit) {
+private fun PostItem(
+    post: Post,
+    isSaved: Boolean,
+    onClick: () -> Unit,
+    onBookmarkClick: () -> Unit
+) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -296,6 +311,7 @@ private fun PostItem(post: Post, onClick: () -> Unit) {
                         .clip(RoundedCornerShape(8.dp))
                 )
             }
+            BookmarkButton(isSaved = isSaved, onClick = onBookmarkClick)
         }
     }
 }

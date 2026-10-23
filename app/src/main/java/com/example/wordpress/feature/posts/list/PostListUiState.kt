@@ -30,5 +30,7 @@ data class PostListUiState(
     val endReached: Boolean = false,
 
     // true khi người dùng đang kéo để làm mới (hiện vòng xoay ở đầu danh sách).
-    val isRefreshing: Boolean = false
+    val isRefreshing: Boolean = false,
+
+    val savedPostIds: Set<Int> = emptySet()
 )

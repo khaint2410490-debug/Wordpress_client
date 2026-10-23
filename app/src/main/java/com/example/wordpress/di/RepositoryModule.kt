@@ -2,8 +2,10 @@ package com.example.wordpressclient.di
 
 import com.example.wordpressclient.data.repository.WordPressCategoryRepository
 import com.example.wordpressclient.data.repository.WordPressPostRepository
+import com.example.wordpressclient.data.repository.RoomSavedPostRepository
 import com.example.wordpressclient.domain.repository.CategoryRepository
 import com.example.wordpressclient.domain.repository.PostRepository
+import com.example.wordpressclient.domain.repository.SavedPostRepository
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -22,6 +24,12 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class RepositoryModule {
+    @Binds
+    @Singleton
+    abstract fun bindSavedPostRepository(
+        impl: RoomSavedPostRepository
+    ): SavedPostRepository
+
 
     @Binds
     @Singleton

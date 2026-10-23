@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.wordpressclient.core.common.AppError
 import com.example.wordpressclient.core.common.UiState
 import com.example.wordpressclient.domain.repository.PostRepository
+import com.example.wordpressclient.domain.repository.SavedPostRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -24,7 +25,8 @@ import javax.inject.Inject
 @HiltViewModel
 class PostDetailViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
-    private val repository: PostRepository
+    private val repository: PostRepository,
+    private val savedPostRepository: SavedPostRepository
 ) : ViewModel() {
 
     // ID bài viết lấy từ tham số điều hướng. Nếu thiếu thì báo lỗi ngay (lỗi lập trình, không phải lỗi người dùng).
@@ -35,13 +37,31 @@ class PostDetailViewModel @Inject constructor(
 
     // Bản chỉ đọc mà màn hình quan sát.
     val uiState: StateFlow<PostDetailUiState> = _uiState.asStateFlow()
+    private val _savedPostIds = MutableStateFlow<Set<Int>>(emptySet())
+    val savedPostIds: StateFlow<Set<Int>> = _savedPostIds.asStateFlow()
 
     // Giữ tham chiếu tới lần tải đang chạy để có thể hủy khi bấm "Thử lại".
     private var loadJob: Job? = null
 
     init {
+        viewModelScope.launch {
+            savedPostRepository.observeSavedPostIds().collect { ids ->
+                _savedPostIds.value = ids
+            }
+        }
         // Vừa mở màn hình là tải bài viết.
         loadPost()
+    }
+
+    fun toggleSaved() {
+        val post = (_uiState.value as? UiState.Success)?.data ?: return
+        viewModelScope.launch {
+            if (post.id in _savedPostIds.value) {
+                savedPostRepository.removeSavedPost(post.id)
+            } else {
+                savedPostRepository.savePost(post)
+            }
+        }
     }
 
     /**
