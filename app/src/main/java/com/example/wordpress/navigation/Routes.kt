@@ -1,6 +1,7 @@
 package com.example.wordpressclient.navigation
 
 import com.example.wordpressclient.feature.posts.detail.PostDetailViewModel
+import com.example.wordpressclient.feature.posts.list.PostListViewModel
 
 /**
  * Routes = nơi khai báo "địa chỉ" của từng màn hình trong app.
@@ -22,6 +23,16 @@ object Routes {
 
     /** Màn hình tìm kiếm. */
     const val SEARCH = "search"
+
+    /** Màn hình danh sách danh mục. */
+    const val CATEGORY_LIST = "categories"
+
+    /** Mẫu route danh sách bài của một danh mục, tên tham số lấy từ PostListViewModel. */
+    const val CATEGORY_POSTS = "categories/{${PostListViewModel.CATEGORY_ID_ARG}}"
+
+    /** Tạo route thật, ví dụ categoryPosts(5) cho ra "categories/5". */
+    fun categoryPosts(categoryId: Int): String = "categories/$categoryId"
+
 
     /**
      * Tạo route thật để chuyển sang màn hình chi tiết một bài cụ thể.

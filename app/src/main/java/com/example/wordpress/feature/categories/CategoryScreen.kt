@@ -6,8 +6,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -34,6 +38,7 @@ import com.example.wordpressclient.domain.model.Category
 @Composable
 fun CategoryScreen(
     onCategoryClick: (Category) -> Unit,
+    onBackClick: () -> Unit,
     viewModel: CategoryViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -41,7 +46,8 @@ fun CategoryScreen(
     CategoryContent(
         state = state,
         onCategoryClick = onCategoryClick,
-        onRetry = viewModel::loadCategories
+        onRetry = viewModel::loadCategories,
+        onBackClick = onBackClick
     )
 }
 
@@ -51,10 +57,23 @@ fun CategoryScreen(
 private fun CategoryContent(
     state: UiState<List<Category>>,
     onCategoryClick: (Category) -> Unit,
-    onRetry: () -> Unit
+    onRetry: () -> Unit,
+    onBackClick: () -> Unit
 ) {
     Scaffold(
-        topBar = { TopAppBar(title = { Text("Danh mục") }) }
+        topBar = {
+            TopAppBar(
+                title = { Text("Danh mục") },
+                navigationIcon = {
+                    IconButton(onClick = onBackClick) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Quay lại"
+                        )
+                    }
+                }
+            )
+        }
     ) { innerPadding ->
         Box(
             modifier = Modifier

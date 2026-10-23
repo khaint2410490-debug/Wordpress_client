@@ -1,5 +1,6 @@
 package com.example.wordpressclient.feature.posts.list
 
+
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -14,9 +15,12 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Icon
@@ -40,7 +44,9 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.example.wordpressclient.core.ui.ErrorRetryMessage
+import com.example.wordpressclient.core.ui.toVietnameseDate
 import com.example.wordpressclient.domain.model.Post
+
 
 /**
  * PostListScreen = màn hình danh sách bài viết (bản "có trạng thái").
@@ -55,6 +61,9 @@ import com.example.wordpressclient.domain.model.Post
 fun PostListScreen(
     onPostClick: (Int) -> Unit,
     onSearchClick: () -> Unit,
+    title: String = "Bài viết",
+    onCategoriesClick: (() -> Unit)? = null,
+    onBackClick: (() -> Unit)? = null,
     viewModel: PostListViewModel = hiltViewModel()
 ) {
     // collectAsStateWithLifecycle: biến StateFlow thành state của Compose
@@ -66,7 +75,8 @@ fun PostListScreen(
         onPostClick = onPostClick,
         onSearchClick = onSearchClick,
         onLoadMore = viewModel::loadNextPage,
-        onRetry = viewModel::retry
+        onRetry = viewModel::retry,
+        onRefresh = viewModel::refresh
     )
 }
 
@@ -81,24 +91,41 @@ private fun PostListContent(
     onPostClick: (Int) -> Unit,
     onSearchClick: () -> Unit,
     onLoadMore: () -> Unit,
-    onRetry: () -> Unit
+    title: String = "Bài viết",
+    onCategoriesClick: (() -> Unit)? = null,
+    onBackClick: (() -> Unit)? = null,
+    onRetry: () -> Unit,
+    onRefresh: () -> Unit
 ) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Bài viết") },
+                title = { Text(title) },
+                // Chỉ có nút quay lại khi được truyền vào (màn hình bài theo danh mục).
+                navigationIcon = {
+                    if (onBackClick != null) {
+                        IconButton(onClick = onBackClick) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Quay lại")
+                        }
+                    }
+                },
                 actions = {
+                    // Chỉ có nút danh mục ở danh sách chung.
+                    if (onCategoriesClick != null) {
+                        IconButton(onClick = onCategoriesClick) {
+                            Icon(Icons.AutoMirrored.Filled.List, contentDescription = "Danh mục")
+                        }
+                    }
                     IconButton(onClick = onSearchClick) {
-                        Icon(
-                            imageVector = Icons.Default.Search,
-                            contentDescription = "Tìm kiếm"
-                        )
+                        Icon(Icons.Default.Search, contentDescription = "Tìm kiếm")
                     }
                 }
             )
         }
     ) { innerPadding ->
-        Box(
+        PullToRefreshBox(
+            isRefreshing = state.isRefreshing,
+            onRefresh = onRefresh,
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
@@ -114,6 +141,14 @@ private fun PostListContent(
                     ErrorRetryMessage(
                         message = state.errorMessage,
                         onRetry = onRetry,
+                        modifier = Modifier.align(Alignment.Center)
+                    )
+                }
+
+                // Tải xong mà không có bài nào (ví dụ danh mục chưa có bài).
+                state.posts.isEmpty() && !state.isLoading && !state.isRefreshing -> {
+                    Text(
+                        text = "Chưa có bài viết nào.",
                         modifier = Modifier.align(Alignment.Center)
                     )
                 }
@@ -234,7 +269,7 @@ private fun PostItem(post: Post, onClick: () -> Unit) {
                 }
 
                 Text(
-                    text = post.date.take(10),
+                    text = post.date.toVietnameseDate(),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.secondary,
                     modifier = Modifier.padding(top = 4.dp)

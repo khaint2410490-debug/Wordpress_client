@@ -2,6 +2,7 @@ package com.example.wordpressclient.feature.posts.detail
 
 import android.text.method.LinkMovementMethod
 import android.widget.TextView
+import android.widget.Toast
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -10,6 +11,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -20,10 +22,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.text.HtmlCompat
@@ -31,6 +33,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.wordpressclient.core.common.UiState
 import com.example.wordpressclient.core.ui.ErrorRetryMessage
+import com.example.wordpressclient.core.ui.sharePost
 import com.example.wordpressclient.domain.model.Post
 
 /**
@@ -62,10 +65,33 @@ private fun PostDetailContent(
     onBackClick: () -> Unit,
     onRetry: () -> Unit
 ) {
+    val context = LocalContext.current
+    val postToShare = (state as? UiState.Success)?.data
+
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {},
+                actions = {
+                    postToShare?.let { post ->
+                        IconButton(
+                            onClick = {
+                                if (!context.sharePost(post.title, post.link)) {
+                                    Toast.makeText(
+                                        context,
+                                        "Không thể chia sẻ bài viết.",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+                            }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Share,
+                                contentDescription = "Chia sẻ bài viết"
+                            )
+                        }
+                    }
+                },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(
@@ -142,11 +168,6 @@ private fun HtmlText(html: String, modifier: Modifier = Modifier) {
     val textColor = MaterialTheme.colorScheme.onBackground.toArgb()
     val linkColor = MaterialTheme.colorScheme.primary.toArgb()
 
-    // Chỉ chuyển đổi HTML lại khi nội dung thay đổi, không làm mỗi lần vẽ lại.
-    val spanned = remember(html) {
-        HtmlCompat.fromHtml(html, HtmlCompat.FROM_HTML_MODE_LEGACY)
-    }
-
     AndroidView(
         modifier = modifier,
         // factory chạy một lần: tạo TextView và cấu hình cố định.
@@ -161,7 +182,12 @@ private fun HtmlText(html: String, modifier: Modifier = Modifier) {
         },
         // update chạy khi nội dung hoặc màu đổi.
         update = { textView ->
-            textView.text = spanned
+            textView.text = HtmlCompat.fromHtml(
+                html,
+                HtmlCompat.FROM_HTML_MODE_LEGACY,
+                CoilImageGetter(textView),
+                null
+            )
             textView.setTextColor(textColor)
             textView.setLinkTextColor(linkColor)
         }

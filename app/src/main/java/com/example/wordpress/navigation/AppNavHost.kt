@@ -11,6 +11,8 @@ import androidx.navigation.navArgument
 import com.example.wordpressclient.feature.posts.detail.PostDetailScreen
 import com.example.wordpressclient.feature.posts.detail.PostDetailViewModel
 import com.example.wordpressclient.feature.posts.list.PostListScreen
+import com.example.wordpressclient.feature.categories.CategoryScreen
+import com.example.wordpressclient.feature.posts.list.PostListViewModel
 import com.example.wordpressclient.feature.search.SearchScreen
 
 /**
@@ -46,7 +48,8 @@ fun AppNavHost(
                 // Bấm vào một bài thì mở màn hình chi tiết với ID tương ứng.
                 onPostClick = { postId ->
                     navController.navigate(Routes.postDetail(postId))
-                }
+                },
+                onCategoriesClick = { navController.navigate(Routes.CATEGORY_LIST) }
             )
         }
 
@@ -71,7 +74,35 @@ fun AppNavHost(
                 // Bấm vào kết quả cũng mở màn hình chi tiết giống danh sách.
                 onPostClick = { postId ->
                     navController.navigate(Routes.postDetail(postId))
+                },
+                onBackClick = { navController.popBackStack() }
+            )
+        }
+
+        // ----- Danh sách danh mục -----
+        composable(route = Routes.CATEGORY_LIST) {
+            CategoryScreen(
+                onBackClick = { navController.popBackStack() },
+                // Bấm một danh mục thì mở danh sách bài của danh mục đó.
+                onCategoryClick = { category ->
+                    navController.navigate(Routes.categoryPosts(category.id))
                 }
+            )
+        }
+
+// ----- Bài viết theo danh mục -----
+        composable(
+            route = Routes.CATEGORY_POSTS,
+            arguments = listOf(
+                navArgument(PostListViewModel.CATEGORY_ID_ARG) { type = NavType.IntType }
+            )
+        ) {
+            // Dùng lại PostListScreen. ViewModel tự đọc categoryId từ SavedStateHandle.
+            PostListScreen(
+                title = "Bài viết theo danh mục",
+                onBackClick = { navController.popBackStack() },
+                onSearchClick = { navController.navigate(Routes.SEARCH) },
+                onPostClick = { postId -> navController.navigate(Routes.postDetail(postId)) }
             )
         }
     }

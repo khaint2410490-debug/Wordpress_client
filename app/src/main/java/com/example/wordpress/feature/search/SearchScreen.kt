@@ -17,6 +17,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -51,6 +52,7 @@ import com.example.wordpressclient.domain.model.Post
 @Composable
 fun SearchScreen(
     onPostClick: (Int) -> Unit,
+    onBackClick: () -> Unit,
     viewModel: SearchViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -59,7 +61,8 @@ fun SearchScreen(
         state = state,
         onQueryChange = viewModel::onQueryChange,
         onSearch = viewModel::searchNow,
-        onPostClick = onPostClick
+        onPostClick = onPostClick,
+        onBackClick = onBackClick
     )
 }
 
@@ -70,10 +73,23 @@ private fun SearchContent(
     state: SearchUiState,
     onQueryChange: (String) -> Unit,
     onSearch: () -> Unit,
-    onPostClick: (Int) -> Unit
+    onPostClick: (Int) -> Unit,
+    onBackClick: () -> Unit,
 ) {
     Scaffold(
-        topBar = { TopAppBar(title = { Text("Tìm kiếm") }) }
+        topBar = {
+            TopAppBar(
+                title = { Text("Tìm kiếm") },
+                navigationIcon = {
+                    IconButton(onClick = onBackClick) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Quay lại"
+                        )
+                    }
+                }
+            )
+        }
     ) { innerPadding ->
         Column(
             modifier = Modifier
