@@ -76,6 +76,9 @@ fun PostListScreen(
         onPostClick = onPostClick,
         onSearchClick = onSearchClick,
         onLoadMore = viewModel::loadNextPage,
+        title = title,
+        onCategoriesClick = onCategoriesClick,
+        onBackClick = onBackClick,
         onRetry = viewModel::retry,
         onRefresh = viewModel::refresh,
         onBookmarkClick = viewModel::toggleSaved
