@@ -7,7 +7,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.graphics.Color
 
 @Composable
 fun BookmarkButton(
@@ -18,7 +17,7 @@ fun BookmarkButton(
         Icon(
             imageVector = if (isSaved) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder,
             contentDescription = if (isSaved) "Bỏ lưu bài viết" else "Lưu bài viết",
-            tint = if (isSaved) Color.Black else MaterialTheme.colorScheme.onSurface
+            tint = if (isSaved) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
         )
     }
 }
