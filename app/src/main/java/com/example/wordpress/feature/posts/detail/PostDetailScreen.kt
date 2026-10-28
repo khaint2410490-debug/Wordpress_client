@@ -39,6 +39,7 @@ import com.example.wordpressclient.core.common.UiState
 import com.example.wordpressclient.core.ui.BookmarkButton
 import com.example.wordpressclient.core.ui.ErrorRetryMessage
 import com.example.wordpressclient.core.ui.sharePost
+import com.example.wordpressclient.core.ui.toVietnameseDate
 import com.example.wordpressclient.domain.model.Post
 
 /**
@@ -155,9 +156,9 @@ private fun PostBody(post: Post) {
             style = MaterialTheme.typography.headlineMedium
         )
 
-        // Ngày đăng: tạm cắt 10 ký tự đầu của chuỗi ISO, ví dụ "2024-05-01".
+        // Ngày đăng dạng dd/MM/yyyy, giống màn hình danh sách.
         Text(
-            text = post.date.take(10),
+            text = post.date.toVietnameseDate(),
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.secondary,
             modifier = Modifier.padding(top = 4.dp, bottom = 16.dp)
